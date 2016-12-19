@@ -2,6 +2,7 @@ package com.jameswierzba.webscraper;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -21,6 +22,7 @@ public class WebScraper {
 			"^[_A-Za-z0-9-\\+]+(\\.[_A-Za-z0-9-]+)*@"
 			+ "[A-Za-z0-9-]+(\\.[A-Za-z0-9]+)*(\\.[A-Za-z]{2,})$";
 	private static final Pattern EMAIL_PATTERN = Pattern.compile(EMAIL_REGEX);
+	private static int NUM_SEARCH_RESULTS = 1000;//the number of bing search results to examine
 	
 	public static void main(String[] args) throws IOException 
 	{
@@ -33,18 +35,32 @@ public class WebScraper {
 			if(i != (words.length - 1)) url += "+";
 		}
 		
-        System.out.println("Fetching " + url + "...");
-
         
-        //TODO loop through x amount of pages 
-        Document doc = Jsoup.connect(url).get();
-        //bing search result URLs are nested in <li> tags in a <h2> header
-        Elements elements = doc.select("li.b_algo h2 a");
-        ArrayList<String> resultUrls = new ArrayList<String>();
-        for(Element element : elements) 
+
+        HashSet<String> resultUrls = new HashSet<String>();
+        int pageIndex = 0;
+        while(pageIndex < NUM_SEARCH_RESULTS)
         {
-        	String resultUrl = element.attr("href");
-        	resultUrls.add(resultUrl);
+        	String urlPaged = url + "&first=" + pageIndex;
+        	System.out.println("Fetching " + urlPaged + "...");
+            //TODO loop through x amount of pages 
+            Document doc = Jsoup.connect(urlPaged).get();
+            //bing search result URLs are nested in <li> tags in a <h2> header
+            Elements elements = doc.select("li.b_algo h2 a");
+            for(Element element : elements) 
+            {
+            	String resultUrl = element.attr("href");
+            	resultUrls.add(resultUrl);
+            }
+            
+            //first result pageshows 7 records, subsequent pages show 14 results
+            if(pageIndex == 0) pageIndex = 7;
+            else pageIndex += 14;
+        }
+
+        for(String resultUrl : resultUrls)
+        {
+        	System.out.println(resultUrl);
         }
         
         //TODO loop through each result url and scan for email using regex
