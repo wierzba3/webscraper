@@ -1,11 +1,14 @@
 package com.jameswierzba.webscraper;
 
 import java.io.IOException;
+import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.commons.validator.routines.UrlValidator;
+import org.jsoup.HttpStatusException;
 import org.jsoup.Jsoup;
 import org.jsoup.helper.Validate;
 import org.jsoup.nodes.Document;
@@ -14,19 +17,42 @@ import org.jsoup.select.Elements;
 
 public class WebScraper {
 
-	private static String SAMPLE_HTML = "";
-
 	private static String URL_BASE = "http://www.bing.com/search?q=";
 	
 	private static final String EMAIL_REGEX =
-			"^[_A-Za-z0-9-\\+]+(\\.[_A-Za-z0-9-]+)*@"
-			+ "[A-Za-z0-9-]+(\\.[A-Za-z0-9]+)*(\\.[A-Za-z]{2,})$";
+			"[_A-Za-z0-9-\\+]+(\\.[_A-Za-z0-9-]+)*@"
+			+ "[A-Za-z0-9-]+(\\.[A-Za-z0-9]+)*(\\.[A-Za-z]{2,})";
 	private static final Pattern EMAIL_PATTERN = Pattern.compile(EMAIL_REGEX);
-	private static int NUM_SEARCH_RESULTS = 1000;//the number of bing search results to examine
+	private static int numSearchResults = 100;//the number of bing search results to examine
 	
 	public static void main(String[] args) throws IOException 
 	{
-		Validate.isTrue(args.length == 1, "usage: supply url to fetch");
+		if(args.length == 0) {
+			System.err.println("Invalid program arguments.");
+			System.err.println("Valid usage: <executable> URL [num_search_results]");
+			System.exit(1);
+			return;
+		}
+//		String urlParam = args[0];
+//		if(!isUrlValid(urlParam)) {
+//			System.err.println("Invalid url: " + urlParam);
+//			System.exit(1);
+//			return;
+//		}
+		if(args.length > 1){
+			String numSearchResultsArg = args[1];
+			try 
+			{
+				numSearchResults = Integer.parseInt(numSearchResultsArg);
+			} catch (NumberFormatException ex)
+			{
+				System.err.println("Invalid num_search_results argument: " + numSearchResultsArg);
+				System.err.println("It mus be a valid integer.");
+				System.exit(1);
+				return;
+			}
+		}
+		//Validate.isTrue(args.length == 1, "usage: supply url to fetch");
         String url = URL_BASE + "";
 		String[] words = args[0].split("\\s+");
 		for(int i = 0; i < words.length; i++)
@@ -39,7 +65,7 @@ public class WebScraper {
 
         HashSet<String> resultUrls = new HashSet<String>();
         int pageIndex = 0;
-        while(pageIndex < NUM_SEARCH_RESULTS)
+        while(pageIndex < numSearchResults)
         {
         	String urlPaged = url + "&first=" + pageIndex;
         	System.out.println("Fetching " + urlPaged + "...");
@@ -58,14 +84,42 @@ public class WebScraper {
             else pageIndex += 14;
         }
 
+        HashSet<String> emails = new HashSet<String>();
         for(String resultUrl : resultUrls)
         {
-        	System.out.println(resultUrl);
+        	System.out.println("Scanning " + resultUrl + " ...");
+        	Document resultDoc = null;
+        	//try to connect to website and catch any exception and move on to next
+        	//catching generic Exception because there are many things that can go wrong
+        	//such as HTTP errors (404, 403, 500), SSL cert exception, timeout exception, ... etc.
+        	try
+        	{
+            	resultDoc = Jsoup.connect(resultUrl).get();
+            	System.err.println("Failed to retrieve document from " + resultUrl);
+        	} catch(Exception ex)
+        	{
+        		continue;
+        	}
+
+            String html = resultDoc.toString();//"...result page html...";
+            Matcher matcher = EMAIL_PATTERN.matcher(html);
+            while(matcher.find())
+            {
+            	String email = matcher.group(0);
+            	emails.add(email);
+            }
         }
         
-        //TODO loop through each result url and scan for email using regex
-        String html = "...result page html...";
-        Matcher matcher = EMAIL_PATTERN.matcher(html);
+        for(String email : emails) System.out.println(email);
+        
+
+	}
+	
+	private static final boolean isUrlValid(String url)
+	{
+		String[] schemes = {"http","https"}; // DEFAULT schemes = "http", "https", "ftp"
+		UrlValidator urlValidator = new UrlValidator(schemes);
+		return urlValidator.isValid(url);
 	}
 
 }
