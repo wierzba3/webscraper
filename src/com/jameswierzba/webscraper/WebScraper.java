@@ -47,7 +47,7 @@ public class WebScraper {
 			} catch (NumberFormatException ex)
 			{
 				System.err.println("Invalid num_search_results argument: " + numSearchResultsArg);
-				System.err.println("It mus be a valid integer.");
+				System.err.println("It must be a valid integer.");
 				System.exit(1);
 				return;
 			}
