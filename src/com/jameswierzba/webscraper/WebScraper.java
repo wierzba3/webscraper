@@ -24,12 +24,13 @@ public class WebScraper {
 			+ "[A-Za-z0-9-]+(\\.[A-Za-z0-9]+)*(\\.[A-Za-z]{2,})";
 	private static final Pattern EMAIL_PATTERN = Pattern.compile(EMAIL_REGEX);
 	private static int numSearchResults = 100;//the number of bing search results to examine
+	private static int startIndex = 0;
 	
 	public static void main(String[] args) throws IOException 
 	{
 		if(args.length == 0) {
 			System.err.println("Invalid program arguments.");
-			System.err.println("Valid usage: <executable> URL [num_search_results]");
+			System.err.println("Valid usage: <executable> URL [num_search_results] [start_index]");
 			System.exit(1);
 			return;
 		}
@@ -52,6 +53,20 @@ public class WebScraper {
 				return;
 			}
 		}
+		if(args.length > 2)
+		{
+			String startIndexArg = args[2];
+			try 
+			{
+				startIndex = Integer.parseInt(startIndexArg);
+			} catch (NumberFormatException ex)
+			{
+				System.err.println("Invalid start index argument: " + startIndexArg);
+				System.err.println("It must be a valid integer.");
+				System.exit(1);
+				return;
+			}
+		}
 		//Validate.isTrue(args.length == 1, "usage: supply url to fetch");
         String url = URL_BASE + "";
 		String[] words = args[0].split("\\s+");
@@ -64,7 +79,7 @@ public class WebScraper {
         
 
         HashSet<String> resultUrls = new HashSet<String>();
-        int pageIndex = 0;
+        int pageIndex = startIndex;
         while(pageIndex < numSearchResults)
         {
         	String urlPaged = url + "&first=" + pageIndex;
