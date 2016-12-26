@@ -28,18 +28,14 @@ public class WebScraper {
 	
 	public static void main(String[] args) throws IOException 
 	{
+		
 		if(args.length == 0) {
 			System.err.println("Invalid program arguments.");
 			System.err.println("Valid usage: <executable> URL [num_search_results] [start_index]");
 			System.exit(1);
 			return;
 		}
-//		String urlParam = args[0];
-//		if(!isUrlValid(urlParam)) {
-//			System.err.println("Invalid url: " + urlParam);
-//			System.exit(1);
-//			return;
-//		}
+		
 		if(args.length > 1){
 			String numSearchResultsArg = args[1];
 			try 
@@ -67,7 +63,7 @@ public class WebScraper {
 				return;
 			}
 		}
-		//Validate.isTrue(args.length == 1, "usage: supply url to fetch");
+		
         String url = URL_BASE + "";
 		String[] words = args[0].split("\\s+");
 		for(int i = 0; i < words.length; i++)
@@ -80,11 +76,12 @@ public class WebScraper {
 
         HashSet<String> resultUrls = new HashSet<String>();
         int pageIndex = startIndex;
-        while(pageIndex < numSearchResults)
+        int resultCnt = 0;
+        while(resultCnt < numSearchResults)
         {
         	String urlPaged = url + "&first=" + pageIndex;
         	System.out.println("Fetching " + urlPaged + "...");
-            //TODO loop through x amount of pages 
+            
             Document doc = Jsoup.connect(urlPaged).get();
             //bing search result URLs are nested in <li> tags in a <h2> header
             Elements elements = doc.select("li.b_algo h2 a");
@@ -95,8 +92,16 @@ public class WebScraper {
             }
             
             //first result pageshows 7 records, subsequent pages show 14 results
-            if(pageIndex == 0) pageIndex = 7;
-            else pageIndex += 14;
+            if(pageIndex == 0) 
+            {
+            	pageIndex = 7;
+            	resultCnt += 7;
+            }
+            else 
+            {
+            	pageIndex += 14;
+            	resultCnt += 14;
+            }
         }
 
         HashSet<String> emails = new HashSet<String>();
@@ -125,7 +130,12 @@ public class WebScraper {
             }
         }
         
-        for(String email : emails) System.out.println(email);
+        int i = 0;
+        for(String email : emails)
+        {
+        	System.out.println(email + (i == emails.size()-1 ? "" : ","));
+        	i++;
+        }
         
 
 	}
